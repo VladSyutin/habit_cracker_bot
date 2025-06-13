@@ -8,7 +8,7 @@ class Database:
     def __init__(self):
         self.db_name = DATABASE_NAME
 
-    async def init(self):
+    async def init_db(self):
         """Инициализация базы данных"""
         async with aiosqlite.connect(self.db_name) as db:
             # Создаем таблицу привычек

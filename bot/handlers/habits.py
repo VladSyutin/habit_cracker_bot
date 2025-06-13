@@ -105,7 +105,7 @@ async def process_confirmation(message: Message, state: FSMContext):
 async def mark_habit_start(message: Message, state: FSMContext):
     """Выбор привычки для отметки выполнения"""
     habits = await db.get_user_habits(message.from_user.id)
-    
+    print(f"[DEBUG] user_id={message.from_user.id} habits={habits}")
     if not habits:
         await message.answer(
             "❌ У вас пока нет привычек. Создайте новую!",
@@ -171,7 +171,7 @@ async def process_habit_selection(message: Message, state: FSMContext):
 async def delete_habit_start(message: Message, state: FSMContext):
     """Выбор привычки для удаления"""
     habits = await db.get_user_habits(message.from_user.id)
-    
+    print(f"[DEBUG] user_id={message.from_user.id} habits={habits}")
     if not habits:
         await message.answer(
             "❌ У вас пока нет привычек. Создайте новую!",
