@@ -6,8 +6,8 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonDefault
 
-import database as db
-from keyboards import (
+from database.models import db
+from bot.keyboards import (
     get_main_keyboard,
     get_habits_keyboard,
     get_period_keyboard,
@@ -147,7 +147,25 @@ async def mark_completion(message: types.Message, state: FSMContext):
         reply_markup=get_habits_keyboard(habits)
     )
 
-@dp.message(F.text.startswith("📝 "))
+@dp.message(F.text == "📊 Статистика")
+async def show_statistics_menu(message: types.Message, state: FSMContext):
+    """Показ меню статистики"""
+    habits = await db.get_user_habits(message.from_user.id)
+    if not habits:
+        await message.answer(
+            "У вас пока нет привычек. Создайте новую привычку!",
+            reply_markup=get_main_keyboard()
+        )
+        return
+    
+    await state.set_state(HabitStates.waiting_for_habit_selection)
+    await state.update_data(action="stats", habits=habits)
+    await message.answer(
+        "Выберите привычку для просмотра статистики:",
+        reply_markup=get_habits_keyboard(habits)
+    )
+
+@dp.message(HabitStates.waiting_for_habit_selection)
 async def process_habit_selection(message: types.Message, state: FSMContext):
     """Обработка выбора привычки"""
     if message.text == "🔙 Вернуться в главное меню":
@@ -169,74 +187,15 @@ async def process_habit_selection(message: types.Message, state: FSMContext):
         await state.clear()
         return
 
-    if action == "complete":
-        await state.update_data(habit_id=habit["id"])
-        await message.answer(
-            "Введите количество выполнений (число от 1 до 100):",
-            reply_markup=get_main_keyboard()
-        )
-        await state.set_state(HabitStates.waiting_for_completion_count)
-    elif action == "stats":
+    if action == "stats":
         await state.update_data(habit_id=habit["id"], habit_name=habit["name"])
         await message.answer(
             "Выберите период:",
             reply_markup=get_period_keyboard()
         )
         await state.set_state(HabitStates.waiting_for_period_selection)
-    elif action == "delete":
-        await state.update_data(habit_id=habit["id"], habit_name=habit["name"])
-        await message.answer(
-            f"Вы уверены, что хотите удалить привычку «{habit['name']}»?",
-            reply_markup=get_confirm_keyboard()
-        )
-        await state.set_state(HabitStates.waiting_for_confirmation)
 
-@dp.message(HabitStates.waiting_for_completion_count)
-async def process_completion_count(message: types.Message, state: FSMContext):
-    """Обработка введенного количества выполнений"""
-    if message.text == "🔙 Вернуться в главное меню":
-        await return_to_main_menu(message, state)
-        return
-
-    try:
-        count = int(message.text)
-        if count < 1 or count > 100:
-            raise ValueError()
-        
-        data = await state.get_data()
-        habit_id = data.get("habit_id")
-        
-        await db.add_completion(habit_id, count)
-        await state.clear()
-        
-        await message.answer(
-            f"✅ Отлично! Записано {count} выполнений.",
-            reply_markup=get_main_keyboard()
-        )
-    except ValueError:
-        await message.answer(
-            "❌ Пожалуйста, введите целое число от 1 до 100:"
-        )
-
-@dp.message(F.text == "📊 Статистика")
-async def show_statistics_menu(message: types.Message, state: FSMContext):
-    """Показ меню статистики"""
-    habits = await db.get_user_habits(message.from_user.id)
-    if not habits:
-        await message.answer(
-            "У вас пока нет привычек. Создайте новую привычку!",
-            reply_markup=get_main_keyboard()
-        )
-        return
-    
-    await state.set_state(HabitStates.waiting_for_habit_selection)
-    await state.update_data(action="stats", habits=habits)
-    await message.answer(
-        "Выберите привычку для просмотра статистики:",
-        reply_markup=get_habits_keyboard(habits)
-    )
-
-@dp.message(F.text.startswith("📊 "))
+@dp.message(HabitStates.waiting_for_period_selection)
 async def show_statistics(message: types.Message, state: FSMContext):
     """Показ статистики за выбранный период"""
     if message.text == "🔙 Вернуться в главное меню":
