@@ -1,0 +1,15 @@
+[Unit]
+Description=Habit Cracker Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/habit_cracker_bot
+Environment=PATH=/root/habit_cracker_bot/venv/bin:$PATH
+Environment=PYTHONPATH=/root/habit_cracker_bot
+ExecStart=/root/habit_cracker_bot/venv/bin/python /root/habit_cracker_bot/bot/main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target 

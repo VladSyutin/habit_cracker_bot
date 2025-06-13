@@ -12,11 +12,16 @@ from database.models import db
 from utils.helpers import setup_logging
 from bot.handlers import base, habits, stats
 
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 async def on_startup(bot: Bot) -> None:
     """Действия при запуске бота"""
-    # Инициализация базы данных
-    await db.init()
+    await db.init_db()
+    logger.info("Database initialized")
     
     # Создаем директорию для базы данных
     Path("data").mkdir(exist_ok=True)
@@ -32,13 +37,14 @@ async def on_startup(bot: Bot) -> None:
         )
         logger.info(f"Webhook set to {settings.webhook_url}")
     else:
-        await bot.delete_webhook(drop_pending_updates=True)
+        # await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Webhook deleted, using polling")
 
 
 async def on_shutdown(bot: Bot) -> None:
     """Действия при остановке бота"""
-    logger.info("Shutting down...")
+    await db.close()
+    logger.info("Database connection closed")
     
     if settings.is_production:
         await bot.delete_webhook()
