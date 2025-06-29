@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+import pytz
 
 def format_date(date_value):
-    """Форматирует дату из различных форматов в '28 июня в 17:55'"""
+    """Форматирует дату из различных форматов в '28 июня в 17:55' с учетом часового пояса"""
     if not date_value:
         return "Не выполнялась"
     
@@ -35,6 +36,18 @@ def format_date(date_value):
                 # Если не удалось распарсить, возвращаем исходную строку
                 return str(date_value)
         
+        # Конвертируем UTC время в московское время
+        # Предполагаем, что время в базе данных сохранено в UTC
+        utc_tz = pytz.UTC
+        moscow_tz = pytz.timezone('Europe/Moscow')
+        
+        # Если datetime не имеет информации о часовом поясе, считаем его UTC
+        if dt.tzinfo is None:
+            dt = utc_tz.localize(dt)
+        
+        # Конвертируем в московское время
+        moscow_dt = dt.astimezone(moscow_tz)
+        
         # Словарь для названий месяцев
         months = {
             1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
@@ -43,20 +56,21 @@ def format_date(date_value):
         }
         
         # Форматируем дату
-        day = dt.day
-        month = months[dt.month]
+        day = moscow_dt.day
+        month = months[moscow_dt.month]
         
         # Если время есть, добавляем его
-        if dt.hour != 0 or dt.minute != 0:
-            hour = dt.hour
-            minute = dt.minute
+        if moscow_dt.hour != 0 or moscow_dt.minute != 0:
+            hour = moscow_dt.hour
+            minute = moscow_dt.minute
             return f"{day} {month} в {hour:02d}:{minute:02d}"
         else:
             # Если времени нет, показываем только дату
             return f"{day} {month}"
             
-    except (ValueError, TypeError, AttributeError):
+    except (ValueError, TypeError, AttributeError) as e:
         # Если не удалось распарсить дату, возвращаем исходную строку
+        print(f"Ошибка при форматировании даты {date_value}: {e}")
         return str(date_value)
 
 # Тестируем функцию
