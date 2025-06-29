@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
-from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
 from database import Database
@@ -23,7 +23,7 @@ async def main():
     
     # Инициализируем бота и диспетчер
     bot = Bot(token=BOT_TOKEN)
-    storage = RedisStorage.from_url("redis://localhost:6379/0")
+    storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
     
     # Регистрируем роутеры
